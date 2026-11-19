@@ -106,7 +106,7 @@ export default function FlujoTickets() {
                         </span>
 
                         <h2 className="h5 fw-bold mb-2">
-                            ¿Cómo funciona NEXDESK?
+                            ¿Cómo funciona HAPPYDESK?
                         </h2>
 
                         <p className="text-secondary mb-0">

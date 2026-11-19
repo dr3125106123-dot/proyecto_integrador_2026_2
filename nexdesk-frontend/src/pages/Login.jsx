@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import EstadoBackend from "../components/EstadoBackend";
+import LogoPixel from "../components/LogoPixel";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
@@ -76,11 +77,11 @@ export default function Login() {
                 {/* Identidad visual */}
                 <div className="text-center mb-4">
                   <div className="nexdesk-logo mx-auto mb-3">
-                    N
+                    <LogoPixel size={44} />
                   </div>
 
                   <h1 className="h3 fw-bold text-primary">
-                    NEXDESK
+                    HAPPYDESK
                   </h1>
 
                   <p className="text-secondary small">
@@ -159,7 +160,7 @@ export default function Login() {
                 <EstadoBackend />
 
                 <p className="text-center text-secondary small mt-4 mb-0">
-                  Acceso autorizado a NEXDESK
+                  Acceso autorizado a HAPPYDESK
                 </p>
 
               </div>

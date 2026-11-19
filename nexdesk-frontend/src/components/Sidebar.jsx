@@ -2,6 +2,7 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { menuPorRol } from "../config/menu";
+import LogoPixel from "./LogoPixel";
 
 export default function Sidebar({ abierto, cerrar }) {
   const { usuario } = useAuth();
@@ -23,9 +24,9 @@ export default function Sidebar({ abierto, cerrar }) {
         aria-label="Navegación principal"
       >
         <div className="nexdesk-sidebar-brand">
-          <span className="nexdesk-brand-icon">N</span>
+          <span className="nexdesk-brand-icon"><LogoPixel size={30} /></span>
           <div>
-            <strong>NEXDESK</strong>
+            <strong>HAPPYDESK</strong>
             <small>Sistema de soporte</small>
           </div>
         </div>

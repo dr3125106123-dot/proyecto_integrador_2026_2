@@ -72,7 +72,7 @@ export default function Dashboard() {
         </h1>
 
         <p className="mb-0 dashboard-hero-subtitle">
-          Bienvenido al centro de gestión de NEXDESK.
+          Bienvenido al centro de gestión de HAPPYDESK.
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export default function Dashboard() {
 
       <div className="alert alert-light border mt-4 rounded-3 dashboard-flow-note">
         <FlujoTickets />
-        Los módulos se conectarán a la API REST de NEXDESK
+        Los módulos se conectarán a la API REST de HAPPYDESK
         en los siguientes bloques.
       </div>
 
