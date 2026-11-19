@@ -1,0 +1,806 @@
+:root {
+  font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --bs-primary: #087f5b;
+  --bs-primary-rgb: 8, 127, 91;
+  --bs-link-color: #087f5b;
+  --bs-link-hover-color: #075b43;
+}
+
+body { margin: 0; min-width: 320px; }
+#root { min-height: 100vh; }
+body {
+  background: #f3f5ea;
+  color: #20342a;
+  font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+  line-height: 1.55;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #163d30;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+p {
+  line-height: 1.65;
+}
+
+.bg-light {
+  background:
+    radial-gradient(ellipse at 15% 15%, rgba(181, 220, 111, 0.26), transparent 36%),
+    radial-gradient(ellipse at 88% 82%, rgba(8, 127, 91, 0.14), transparent 40%),
+    #f3f5ea !important;
+}
+
+.card {
+  border-color: #e0e7d8;
+  border-radius: 18px;
+  background-color: #fffefa;
+  box-shadow: 0 12px 32px rgba(27, 62, 43, 0.08);
+}
+
+.btn {
+  border-radius: 12px;
+  font-weight: 700;
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+    box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.btn-primary {
+  box-shadow: 0 5px 14px rgba(8, 127, 91, 0.24);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(8, 127, 91, 0.30);
+}
+
+.btn-light {
+  --bs-btn-color: #294d3b;
+  --bs-btn-bg: #edf3df;
+  --bs-btn-border-color: #dce8ca;
+  --bs-btn-hover-bg: #dfedc5;
+  --bs-btn-hover-border-color: #cfe0ae;
+  --bs-btn-hover-color: #173c2d;
+}
+
+.form-control,
+.form-select {
+  min-height: 44px;
+  border-color: #d8e2d2;
+  border-radius: 12px;
+}
+
+.form-control::placeholder {
+  color: #829287;
+}
+
+.form-label {
+  color: #294d3b;
+  font-weight: 600;
+}
+
+.table {
+  --bs-table-color: #30463a;
+  --bs-table-border-color: #e3e9dd;
+  vertical-align: middle;
+}
+
+.table thead th {
+  background-color: #e8f0db;
+  color: #315a43;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.modal-content {
+  border: 1px solid #e0e7d8;
+  border-radius: 20px;
+  box-shadow: 0 20px 55px rgba(22, 52, 39, 0.20);
+}
+
+.dropdown-menu {
+  border-color: #e0e7d8;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(22, 52, 39, 0.15);
+}
+
+.alert {
+  border-radius: 12px;
+}
+
+.btn-primary {
+  --bs-btn-bg: #087f5b;
+  --bs-btn-border-color: #087f5b;
+  --bs-btn-hover-bg: #075b43;
+  --bs-btn-hover-border-color: #075b43;
+  --bs-btn-active-bg: #064b38;
+  --bs-btn-active-border-color: #064b38;
+  --bs-btn-disabled-bg: #087f5b;
+  --bs-btn-disabled-border-color: #087f5b;
+  --bs-btn-color: #fff;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-color: #fff;
+  --bs-btn-disabled-color: #fff;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #087f5b;
+  --bs-btn-border-color: #087f5b;
+  --bs-btn-hover-bg: #087f5b;
+  --bs-btn-hover-border-color: #087f5b;
+  --bs-btn-active-bg: #075b43;
+  --bs-btn-active-border-color: #075b43;
+  --bs-btn-disabled-color: #087f5b;
+  --bs-btn-disabled-border-color: #087f5b;
+}
+
+.text-primary {
+  color: #087f5b !important;
+}
+
+.text-bg-primary,
+.bg-primary {
+  background-color: #087f5b !important;
+  color: #fff !important;
+}
+
+.bg-primary.bg-opacity-25 {
+  background-color: rgba(8, 127, 91, 0.25) !important;
+}
+
+.border-primary,
+.form-control:focus,
+.form-select:focus {
+  border-color: #087f5b !important;
+}
+
+.form-control:focus,
+.form-select:focus,
+.btn:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgba(8, 127, 91, 0.22) !important;
+}
+
+.nexdesk-logo {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #c8ef75, #65c58b);
+  color: #12392d;
+  font-size: 2rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(8, 127, 91, 0.22);
+}
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+
+/* Notificación de bienvenida NEXDESK */
+
+.nexdesk-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1100;
+  width: min(390px, calc(100vw - 32px));
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #198754;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.16);
+
+  opacity: 0;
+  transform: translateY(-18px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.nexdesk-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.nexdesk-toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: #e8f7ee;
+  color: #198754;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.nexdesk-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: #198754;
+  transform-origin: left;
+  animation: nexdesk-progress 4.3s linear forwards;
+}
+
+@keyframes nexdesk-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (max-width: 576px) {
+  .nexdesk-toast {
+    top: 12px;
+    right: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexdesk-toast,
+  .nexdesk-toast-progress {
+    transition: none;
+    animation: none;
+  }
+}
+
+
+/* =========================================
+   NEXDESK - LAB 26.4
+   Layout principal
+========================================= */
+
+.nexdesk-app {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 95% 8%, rgba(197, 226, 130, 0.17), transparent 34%),
+    #f3f5ea;
+}
+
+.nexdesk-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 260px;
+  background: linear-gradient(165deg, #123a30 0%, #0c2d26 72%, #09271f 100%);
+  color: #fff;
+  z-index: 1040;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease;
+}
+
+.nexdesk-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 26px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.nexdesk-sidebar-brand strong {
+  display: block;
+  font-size: 19px;
+  letter-spacing: 0.4px;
+}
+
+.nexdesk-sidebar-brand small {
+  display: block;
+  color: #c0d3bd;
+  font-size: 11px;
+}
+
+.nexdesk-brand-icon {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(145deg, #c8ef75, #65c58b);
+  color: #12392d;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 23px;
+}
+
+.nexdesk-sidebar-label {
+  color: #a7c7ae;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 28px 22px 12px;
+}
+
+.nexdesk-sidebar-nav {
+  padding: 0 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.nexdesk-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  margin-bottom: 5px;
+  color: #c4d6ca;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.nexdesk-nav-link:hover {
+  color: #fff;
+  background: rgba(204, 239, 117, 0.12);
+}
+
+.nexdesk-nav-link.activo {
+  color: #173a2b;
+  background: #c8ef75;
+  font-weight: 600;
+  box-shadow: 0 5px 14px rgba(4, 20, 14, 0.20);
+}
+
+.nexdesk-nav-icon {
+  width: 24px;
+  text-align: center;
+  font-size: 19px;
+}
+
+.nexdesk-sidebar-footer {
+  padding: 22px;
+  color: #c7d9cb;
+  border-top: 1px solid rgba(204, 239, 117, 0.14);
+  font-size: 12px;
+}
+
+.nexdesk-sidebar-footer small {
+  display: block;
+  color: #a3c0a9;
+  margin-top: 4px;
+}
+
+.nexdesk-online-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  margin-right: 7px;
+}
+
+.nexdesk-main {
+  margin-left: 260px;
+  min-height: 100vh;
+}
+
+.nexdesk-topbar {
+  min-height: 78px;
+  background: #fff;
+  border-bottom: 1px solid #e0e7d8;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.nexdesk-content {
+  padding: 30px;
+}
+
+.nexdesk-topbar strong {
+  color: #163d30;
+}
+
+.nexdesk-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e4efce;
+  color: #087f5b;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.nexdesk-menu-toggle {
+  display: none;
+}
+
+.nexdesk-overlay {
+  display: none;
+}
+
+.nexdesk-module-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.nexdesk-module-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(21, 65, 43, 0.15) !important;
+}
+
+.nexdesk-module-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #e6f4ce, #d6efdf);
+  color: #087f5b;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+}
+
+.dashboard-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 28px 32px;
+  border: 1px solid rgba(208, 235, 158, 0.18);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(201, 239, 117, 0.27), transparent 25%),
+    linear-gradient(120deg, #123b30 0%, #087f5b 68%, #49a36f 100%);
+  box-shadow: 0 14px 32px rgba(14, 70, 48, 0.18);
+}
+
+.dashboard-hero::after {
+  position: absolute;
+  z-index: -1;
+  top: -88px;
+  right: -24px;
+  width: 260px;
+  height: 260px;
+  border: 1px solid rgba(231, 250, 195, 0.26);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(231, 250, 195, 0.06),
+    0 0 0 58px rgba(231, 250, 195, 0.04);
+  content: "";
+}
+
+.dashboard-hero-breadcrumb,
+.dashboard-hero-subtitle {
+  color: rgba(245, 251, 235, 0.82);
+}
+
+.dashboard-hero-title {
+  color: #fff;
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+}
+
+.dashboard-account-card {
+  border-left: 5px solid #b8df6b !important;
+}
+
+.dashboard-account-card .card-body {
+  padding: 1.5rem;
+}
+
+.dashboard-account-card h2 {
+  color: #173d30;
+}
+
+.dashboard-account-card .text-secondary:first-child {
+  color: #557467 !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.dashboard-section-heading h2 {
+  color: #173d30;
+}
+
+.dashboard-page .nexdesk-module-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e1e9d8 !important;
+  background: linear-gradient(145deg, #fffefa, #f8fbf2);
+}
+
+.dashboard-page .nexdesk-module-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, #087f5b, #b8df6b);
+  content: "";
+}
+
+.dashboard-page .nexdesk-module-card .card-body {
+  padding-top: 1.6rem;
+}
+
+.dashboard-page .nexdesk-module-card h3 {
+  color: #214634 !important;
+}
+
+.dashboard-page section[aria-label="Analítica de tickets"] .card {
+  border: 1px solid #e1e9d8;
+}
+
+.dashboard-page .progress {
+  overflow: hidden;
+  border-radius: 99px;
+  background-color: #e9efe1;
+}
+
+.dashboard-flow-note {
+  border-color: #dce8ca !important;
+  background: linear-gradient(110deg, #f6f8ed, #eaf3df);
+}
+
+@media (max-width: 991px) {
+  .nexdesk-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .nexdesk-sidebar.abierto {
+    transform: translateX(0);
+  }
+
+  .nexdesk-main {
+    margin-left: 0;
+  }
+
+  .nexdesk-menu-toggle {
+    display: inline-flex;
+  }
+
+  .nexdesk-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1035;
+  }
+
+  .nexdesk-content {
+    padding: 20px 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .nexdesk-topbar {
+    padding: 12px 15px;
+  }
+
+  .dashboard-hero {
+    padding: 24px 20px;
+  }
+
+  .nexdesk-topbar > div:first-child small,
+  .nexdesk-user-info {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexdesk-sidebar,
+  .nexdesk-module-card,
+  .nexdesk-nav-link {
+    transition: none;
+  }
+}
+
+
+/* LAB 26.4 - Flujo interactivo de tickets */
+
+.nexdesk-flujo-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dce6d3;
+  border-radius: 12px;
+  background: #eef4e4;
+  padding: 8px;
+}
+
+.nexdesk-flujo-svg {
+  display: block;
+  width: 100%;
+  max-width: 850px;
+  min-width: 480px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.nexdesk-flujo-nodo {
+  cursor: pointer;
+  outline: none;
+}
+
+.nexdesk-flujo-nodo rect {
+  transition: fill 0.2s ease, stroke-width 0.2s ease;
+}
+
+.nexdesk-flujo-nodo:hover rect,
+.nexdesk-flujo-nodo:focus-visible rect {
+  stroke-width: 3;
+}
+
+.nexdesk-flujo-detalle {
+  border: 1px solid #dce6d3;
+  border-left: 5px solid #087f5b;
+  border-radius: 12px;
+  padding: 20px;
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexdesk-flujo-nodo rect {
+    transition: none;
+  }
+}
+
+/* Estilo de bloques inspirado en videojuegos de construcción */
+.nexdesk-app {
+  background-color: #e4ecd8;
+  background-image:
+    linear-gradient(rgba(67, 103, 53, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(67, 103, 53, 0.035) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.nexdesk-sidebar {
+  border-right: 4px solid #739b47;
+  background-color: #294b2e;
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 50%, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.025) 50%, transparent 50%);
+  background-size: 16px 16px;
+}
+
+.nexdesk-brand-icon,
+.nexdesk-logo {
+  border: 2px solid #263d25;
+  border-radius: 2px;
+  background: #a7d84f;
+  color: #233d25;
+  box-shadow: 4px 4px 0 rgba(13, 39, 24, 0.55);
+}
+
+.nexdesk-nav-link,
+.nexdesk-nav-link.activo {
+  border-radius: 2px;
+}
+
+.nexdesk-nav-link.activo {
+  background: #a7d84f;
+  color: #233d25;
+  box-shadow: 3px 3px 0 #172f20;
+}
+
+.dashboard-hero {
+  border: 3px solid #203f2b;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(22, 59, 43, 0.12), rgba(17, 47, 30, 0.12)),
+    linear-gradient(135deg, #3e7540, #285336);
+  box-shadow: 6px 6px 0 #b6c69d;
+}
+
+.dashboard-hero::after {
+  z-index: 0;
+  top: 20px;
+  right: 48px;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 0;
+  background: #a7d84f;
+  box-shadow:
+    -20px 20px 0 #a7d84f,
+    0 20px 0 #a7d84f,
+    20px 20px 0 #a7d84f,
+    40px 20px 0 #a7d84f,
+    -20px 40px 0 #a7d84f,
+    0 40px 0 #a7d84f,
+    20px 40px 0 #a7d84f,
+    0 60px 0 #84633e,
+    20px 60px 0 #84633e;
+}
+
+.dashboard-hero-breadcrumb,
+.dashboard-hero-subtitle,
+.dashboard-hero-title {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-hero-title,
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Courier New", Courier, monospace;
+  letter-spacing: 0;
+}
+
+.dashboard-account-card,
+.dashboard-page .nexdesk-module-card,
+.dashboard-page section[aria-label="Analítica de tickets"] .card,
+.nexdesk-flujo-detalle {
+  border: 2px solid #73875b !important;
+  border-radius: 2px;
+  box-shadow: 4px 4px 0 #c2cdae;
+}
+
+.dashboard-account-card {
+  border-left: 6px solid #a7d84f !important;
+}
+
+.dashboard-page .nexdesk-module-card::before {
+  height: 6px;
+  background: #a7d84f;
+}
+
+.nexdesk-module-icon {
+  border: 2px solid #73875b;
+  border-radius: 2px;
+  background: #d3e6ad;
+  box-shadow: 3px 3px 0 #aebf91;
+}
+
+.btn {
+  border: 2px solid #315735;
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 #b6c69d;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.btn-primary {
+  --bs-btn-bg: #4e853c;
+  --bs-btn-border-color: #315735;
+  --bs-btn-hover-bg: #3b6d31;
+  --bs-btn-hover-border-color: #23472c;
+  --bs-btn-active-bg: #315735;
+  --bs-btn-active-border-color: #23472c;
+  --bs-btn-disabled-bg: #4e853c;
+  --bs-btn-disabled-border-color: #315735;
+  box-shadow: 3px 3px 0 #263f2a;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #263f2a;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #315735;
+  --bs-btn-border-color: #315735;
+  --bs-btn-hover-bg: #a7d84f;
+  --bs-btn-hover-border-color: #315735;
+  --bs-btn-hover-color: #233d25;
+  --bs-btn-active-bg: #8fbd42;
+  --bs-btn-active-border-color: #315735;
+}
+
+.form-control,
+.form-select {
+  border: 2px solid #9cac83;
+  border-radius: 2px;
+}
+
+.table thead th {
+  background-color: #d3e6ad;
+  color: #315735;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.dashboard-page .progress {
+  border: 1px solid #82966d;
+  border-radius: 0;
+  background-color: #d3ddc2;
+}
+
+.dashboard-flow-note {
+  border: 2px solid #73875b !important;
+  border-radius: 2px !important;
+  box-shadow: 4px 4px 0 #c2cdae;
+}

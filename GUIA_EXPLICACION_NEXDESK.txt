@@ -1,0 +1,1301 @@
+GUIA DETALLADA DEL PROYECTO NEXDESK
+===================================
+
+Esta guía explica el proyecto que está en las carpetas:
+
+  lab-node25_backend_seguro/
+  nexdesk-frontend/
+
+Incluye el backend, el frontend, la base de datos, la configuración, las
+pruebas Postman y los conceptos de JavaScript que aparecen repetidamente.
+No incluye valores secretos de archivos .env.
+
+======================================================================
+1. ¿QUÉ HACE NEXDESK?
+======================================================================
+
+NEXDESK es un sistema para registrar y atender solicitudes de soporte
+técnico. Una persona crea un ticket; un administrador puede asignarlo a
+un técnico; el técnico atiende la solicitud, agrega seguimientos y
+cambia su estado; el solicitante consulta el avance y recibe avisos.
+
+El proyecto tiene tres partes:
+
+  1. Frontend: lo que la persona ve en el navegador.
+  2. Backend: el servidor que recibe y procesa las solicitudes.
+  3. Base de datos: donde se conservan usuarios, tickets y demás datos.
+
+El recorrido general es:
+
+  Navegador React
+       |
+       | solicitud HTTP con datos JSON y, si corresponde, un token
+       v
+  API Express
+       |
+       | consultas SQL
+       v
+  PostgreSQL de Supabase
+
+Supabase Auth verifica las credenciales de acceso. PostgreSQL conserva el
+perfil de NEXDESK, el rol y los datos del sistema.
+
+======================================================================
+2. CONCEPTOS BÁSICOS DE JAVASCRIPT QUE SE REPITEN
+======================================================================
+
+2.1 Variable
+
+Una variable es un nombre que el programa usa para referirse a un dato.
+
+  const puerto = 3000;
+  let nombre = "Ana";
+
+En el primer ejemplo, "puerto" es el nombre y 3000 es el dato. Las
+variables pueden contener números, textos, valores verdadero/falso,
+listas, objetos u otros tipos de dato.
+
+"const" significa que no se volverá a asignar otro valor a ese nombre.
+"let" se usa cuando se espera asignar otro valor después. "const" no
+convierte automáticamente todos los contenidos de un objeto en
+inmutables; principalmente impide reasignar la variable.
+
+2.2 Función
+
+Una función agrupa instrucciones para realizar una tarea. Puede recibir
+datos entre paréntesis y devolver un resultado.
+
+  function sumar(a, b) {
+    return a + b;
+  }
+
+"a" y "b" son parámetros; "return" devuelve el resultado.
+
+2.3 Función asíncrona y await
+
+Una consulta de red o de base de datos puede tardar. "async" permite
+esperar esa operación sin detener todo el proceso:
+
+  const datos = await pool.query(sql);
+
+La función que contiene "await" debe ser "async". Si la operación falla,
+puede producir un error que se gestiona con "try/catch".
+
+2.4 Objeto
+
+Un objeto guarda datos en forma de pares nombre: valor:
+
+  const usuario = {
+    nombre: "Ana",
+    rol: "usuario"
+  };
+
+"usuario" es el objeto; "nombre" y "rol" son propiedades. Se leen con
+usuario.nombre o usuario.rol. Las llaves { } también se usan para
+agrupar instrucciones de funciones, condicionales y otros bloques; el
+significado depende del contexto.
+
+Objetos que aparecen en NEXDESK:
+
+  req.usuario
+    Representa la identidad ya autenticada en el backend. Sus propiedades
+    incluyen id (ID interno de usuarios), authUserId (UUID de Supabase),
+    nombre, apellido, email, rol y debeCambiarPassword.
+
+  Un ticket
+    Es un objeto con propiedades como id, titulo, descripcion, prioridad,
+    estado, usuario_id, tecnico_id, categoria_id, solucion y fechas. Cada
+    propiedad contiene un dato distinto del mismo ticket.
+
+  Una notificación
+    Incluye id, ticket_id, tipo, titulo, mensaje, leida, fecha_creacion y
+    fecha_lectura. "leida" es booleano; las fechas son datos temporales.
+
+  Una respuesta de error
+    El backend puede enviar un objeto como
+    { "error": "Permisos insuficientes" }. En el frontend se convierte en
+    un Error de JavaScript para que la pantalla muestre el mensaje.
+
+  Un objeto de opciones
+    Algunas funciones reciben opciones como { method: "POST", body: datos }.
+    method y body son propiedades que indican cómo hacer el fetch.
+
+Los objetos agrupan valores relacionados. No son necesariamente clases ni
+algo visual: por ejemplo, un objeto ticket puede existir en memoria y
+representar una fila de la tabla tickets.
+
+2.5 Arreglo
+
+Un arreglo, escrito con [ ], contiene varios valores ordenados:
+
+  const roles = ["admin", "tecnico", "usuario"];
+
+Los arreglos se recorren, filtran y transforman con métodos como
+"map", "filter" y "includes".
+
+2.6 Importar y exportar
+
+"export" hace disponible una función, variable u objeto desde un
+archivo. "import" permite usarlo en otro archivo. Así se divide el
+programa en módulos sin escribirlo todo en un archivo enorme.
+
+2.7 JSON
+
+JSON es un formato de texto para enviar datos entre frontend y backend.
+Un objeto JavaScript como { nombre: "Ana" } se envía normalmente como
+texto JSON: {"nombre":"Ana"}.
+
+2.8 req, res y next de Express
+
+En una función de ruta/middleware:
+
+  req  = solicitud entrante: URL, encabezados, usuario y cuerpo.
+  res  = respuesta que el servidor enviará al navegador.
+  next = continúa al siguiente middleware o entrega un error.
+
+2.9 HTTP y códigos
+
+  GET     consulta información.
+  POST    crea o envía una operación.
+  PUT     actualiza un recurso.
+  PATCH   modifica parcialmente un recurso.
+
+  200 = operación exitosa.
+  201 = recurso creado.
+  400 = solicitud/datos incorrectos.
+  401 = falta autenticación válida.
+  403 = usuario identificado sin permiso.
+  404 = recurso no encontrado o deliberadamente oculto.
+  409 = conflicto con el estado/datos actuales.
+  500 = error inesperado del servidor.
+
+======================================================================
+3. ESTRUCTURA DEL PROYECTO
+======================================================================
+
+BACKEND: lab-node25_backend_seguro/
+
+  package.json       dependencias y comandos npm.
+  package-lock.json  versiones exactas resueltas por npm.
+  .env               configuración real local; no compartir.
+  .env.example       plantilla de configuración sin credenciales reales.
+  certs/             certificado CA usado si PostgreSQL requiere TLS.
+  database/          esquema, datos de prueba y verificaciones SQL.
+  postman/           colección de solicitudes de prueba.
+  src/
+    server.js        inicia el proceso HTTP.
+    app.js           configura Express y monta rutas.
+    config/          PostgreSQL, Supabase y variables.
+    routes/          endpoints y orden de middlewares.
+    controllers/     recibe solicitudes y produce respuestas HTTP.
+    services/        lógica de negocio y consultas SQL.
+    middlewares/     autenticación, permisos y validaciones.
+    validators/      reglas de datos de entrada.
+
+FRONTEND: nexdesk-frontend/
+
+  package.json       dependencias y tareas de Vite.
+  index.html         página inicial que contiene el elemento root.
+  vite.config.js     configuración del servidor/compilador Vite.
+  src/main.jsx       monta React en el documento.
+  src/App.jsx        prepara proveedor de sesión y rutas.
+  src/pages/         pantallas completas.
+  src/components/    piezas visuales reutilizables.
+  src/context/       estado de autenticación compartido.
+  src/hooks/         funciones React reutilizables.
+  src/layouts/       estructura común alrededor de páginas.
+  src/routes/        navegación y protección de páginas.
+  src/services/      llamadas HTTP a la API.
+  src/config/        URL de API y opciones de menú.
+  src/*.css          estilos.
+
+======================================================================
+4. PACKAGE.JSON, PACKAGE-LOCK.JSON Y DEPENDENCIAS
+======================================================================
+
+package.json describe el proyecto: nombre, tipo de módulos, comandos y
+dependencias. No contiene normalmente el código de las bibliotecas.
+
+Backend, package.json:
+
+  start       ejecuta node src/server.js.
+  dev         ejecuta nodemon para reiniciar al cambiar archivos.
+  dev:watch   usa la opción watch de Node.
+  express     crea la API y sus rutas.
+  pg          permite consultar PostgreSQL.
+  @supabase/supabase-js  conecta con Supabase Auth.
+  dotenv      carga valores de .env.
+  cors        controla los orígenes web autorizados.
+  helmet      agrega cabeceras HTTP de seguridad.
+  express-validator valida datos.
+  express-rate-limit limita solicitudes repetidas.
+  nodemon    herramienta de desarrollo.
+
+Frontend, package.json:
+
+  dev       inicia Vite para desarrollar.
+  build     prepara la versión compilada.
+  lint      ejecuta ESLint.
+  preview   muestra localmente la compilación.
+  react y react-dom construyen la interfaz.
+  react-router-dom controla la navegación.
+  bootstrap aporta estilos y componentes.
+  jspdf y jspdf-autotable generan PDF.
+  vite sirve y compila el frontend.
+
+Una dependencia es un paquete reutilizable del que depende el programa.
+Por ejemplo, Express implementa muchas funciones HTTP que de otro modo
+habría que programar manualmente.
+
+package-lock.json es generado y actualizado por npm. Registra las
+versiones exactas instaladas y las dependencias indirectas (paquetes que
+necesitan otros paquetes). No suele editarse manualmente. Ayuda a que
+varias personas instalen versiones equivalentes.
+
+======================================================================
+5. CONFIGURACIÓN Y VARIABLES DE ENTORNO
+======================================================================
+
+Un archivo .env no es una variable de JavaScript. Es un archivo de texto
+con configuraciones escritas como NOMBRE=VALOR.
+
+Ejemplo:
+
+  PORT=3000
+  DATABASE_URL=postgresql://USUARIO:CLAVE@HOST:5432/postgres
+
+En ese ejemplo PORT y DATABASE_URL son nombres de configuración; lo que
+va a la derecha del signo igual son sus valores.
+
+.env.example es una plantilla que muestra qué configurar. En el
+proyecto incluye marcadores como USUARIO, CLAVE y HOST y una instrucción
+para reemplazar el token de diagnóstico. No contiene la conexión real.
+
+.env es la copia local que se completa con los valores del entorno real.
+Puede contener contraseñas y claves privadas, por eso debe excluirse de
+Git y no compartirse.
+
+Variables que el backend espera:
+
+  NODE_ENV                    modo de ejecución.
+  PORT                        puerto HTTP; por defecto 3000.
+  HOST                        dirección de escucha; por defecto local.
+  DATABASE_URL                conexión a PostgreSQL/Supabase.
+  PGSSL                       activa o desactiva TLS.
+  PGSSL_CA_PATH               ruta al certificado CA, si se usa.
+  PGPOOL_MAX                  máximo de conexiones del pool.
+  LAB_DIAGNOSTICS_ENABLED     activa endpoints de diagnóstico.
+  LAB_DIAGNOSTICS_TOKEN       token secreto para esos endpoints.
+  SUPABASE_URL                URL del proyecto Supabase.
+  SUPABASE_ANON_KEY           clave pública de Supabase Auth.
+  SUPABASE_SERVICE_ROLE_KEY   clave administrativa privada.
+  FRONTEND_URL                URL a la que redirige recuperación.
+
+El frontend solo necesita una URL pública:
+
+  VITE_API_URL=http://localhost:3000
+
+Las variables con prefijo VITE_ pueden incluirse en el código enviado al
+navegador. Nunca se deben poner DATABASE_URL ni la clave SERVICE_ROLE en
+el frontend.
+
+======================================================================
+6. ARRANQUE Y CONFIGURACIÓN DEL BACKEND
+======================================================================
+
+src/server.js
+
+Importa app, el pool de base de datos y la configuración env. Llama a
+app.listen(env.port, env.host) para aceptar solicitudes. Registra el
+apagado ordenado con SIGINT y SIGTERM: deja de recibir peticiones y
+cierra pool.end() para liberar las conexiones.
+
+src/app.js
+
+Construye el objeto app de Express y configura el procesamiento:
+
+  app.disable("x-powered-by")  oculta una cabecera informativa.
+  helmet()                     añade cabeceras HTTP de seguridad.
+  cors(...)                    permite el origen del frontend.
+  express.json(...)            interpreta cuerpos JSON, máximo 20 KB.
+
+Después registra GET /api/estado, las rutas de autenticación, usuarios,
+categorías, técnicos, tickets, seguimientos, notificaciones y
+diagnósticos. La autenticación y el cambio obligatorio de contraseña
+son aplicados a los módulos que necesitan sesión.
+
+El orden importa: las rutas de seguimientos se montan debajo de
+/api/tickets antes de tickets.routes.js porque son subrutas de ese
+módulo.
+
+Al final se registra:
+
+  1. Respuesta 404 para rutas desconocidas.
+  2. Middleware de errores.
+
+El manejador de errores convierte errores conocidos de PostgreSQL en
+respuestas HTTP comprensibles (duplicado, referencia, CHECK, formato
+inválido). Un error inesperado se registra en consola sin filtrar
+detalles internos al cliente.
+
+src/config/env.js
+
+Carga dotenv y forma el objeto env, que se congela con Object.freeze.
+La función int convierte un valor de texto a número entero positivo o
+falla con error. Se valida que DATABASE_URL exista. Diagnósticos no
+pueden activarse en producción y exigen token de al menos 32 caracteres.
+
+src/config/db.js
+
+Crea el pool de pg. El pool reutiliza conexiones y tiene límites de
+conexión, inactividad y tiempo de consulta. Si TLS está activo, valida el
+certificado; si se configura PGSSL_CA_PATH, lee el archivo CA. La función
+comprobarConexion ejecuta SELECT 1 y responde si PostgreSQL está
+accesible.
+
+src/config/supabase.js
+
+Crea supabaseAuth a partir de SUPABASE_URL y SUPABASE_ANON_KEY. Se usa
+para autenticar las credenciales y verificar access tokens. No conserva
+sesión local porque el backend gestiona cada solicitud.
+
+src/config/supabaseAdmin.js
+
+Crea supabaseAdmin con SUPABASE_SERVICE_ROLE_KEY. Sirve para operaciones
+administrativas como crear identidades o actualizar contraseñas. La
+clave tiene privilegios elevados y no debe salir del backend.
+
+======================================================================
+7. MIDDLEWARES Y VALIDACIONES DEL BACKEND
+======================================================================
+
+Un middleware es una función que se ejecuta en el camino de una
+solicitud antes del controlador. Puede aceptar, rechazar o modificar
+req y luego llamar next().
+
+middlewares/autenticar.js
+
+  1. Lee Authorization.
+  2. Comprueba el formato "Bearer <token>".
+  3. Supabase verifica el token y devuelve la identidad.
+  4. PostgreSQL busca public.usuarios usando auth_user_id.
+  5. Rechaza perfil inexistente, usuario inactivo o rol inactivo.
+  6. Construye req.usuario con id local, authUserId, nombre, apellido,
+     email, rol y debeCambiarPassword.
+
+req.usuario se vuelve la identidad de confianza para el resto del
+backend. Por eso el backend no debe fiarse de un usuario_id enviado por
+el navegador para decidir quién realiza una acción.
+
+middlewares/autorizar.js
+
+autorizar("admin", "superadmin") devuelve otro middleware. Este compara
+req.usuario.rol con los roles permitidos. Sin usuario responde 401; rol
+incorrecto responde 403.
+
+middlewares/exigirPasswordActualizado.js
+
+Bloquea los módulos normales si req.usuario.debeCambiarPassword es
+verdadero. Permite, en cambio, acceder a la ruta de cambio de clave.
+
+middlewares/validar.js
+
+Lee los errores acumulados por express-validator. Si hay errores
+responde HTTP 400 y devuelve detalles; si no, llama next().
+
+middlewares/autorizarTicket.js
+
+Busca el ticket solicitado y comprueba su pertenencia. Acceso permitido
+a administración, al propietario o al técnico asignado. Guarda el
+registro autorizado en req.ticketAutorizado para el middleware siguiente.
+Devuelve 404 a quien no tiene permiso, evitando confirmar que el ticket
+existe.
+
+middlewares/autorizarEscrituraSeguimiento.js
+
+Comprueba req.ticketAutorizado. Autoriza administrador, solicitante
+propietario o técnico asignado para agregar observaciones.
+
+middlewares/exigirRolesAdministrativos.js
+
+validarAsignacionRol limita los roles que puede asignar quien crea una
+cuenta. superadmin puede asignar todos; admin solo tecnico o usuario.
+
+middlewares/labToken.js
+
+Protege diagnósticos mediante la cabecera X-Lab-Token. Usa
+timingSafeEqual para comparar tokens en tiempo constante, evitando
+filtrar diferencias por el tiempo de comparación. Antes comprueba que
+los buffers tengan igual longitud, requisito de timingSafeEqual.
+
+Validadores:
+
+  auth.validator.js         correo y contraseñas.
+  usuarios.validator.js     documento, nombre, apellido, email, rol, id,
+                            estado.
+  tickets.validator.js      estados, título, descripción, prioridad,
+                            categoría, técnico y solución.
+  categorias.validator.js  id y datos de categoría.
+  seguimientos.validator.js id de ticket y observación.
+
+Los validadores detienen datos inválidos antes de entrar a la lógica de
+negocio. El esquema SQL también comprueba reglas críticas: la validación
+del backend no reemplaza constraints de base de datos.
+
+======================================================================
+8. RUTAS, CONTROLADORES Y SERVICIOS
+======================================================================
+
+Una RUTA define el método HTTP y la dirección; también el orden de los
+middlewares. Un CONTROLADOR conecta Express con la lógica del módulo: lee
+req, llama al servicio y devuelve res.status(...).json(...). Un SERVICIO
+realiza las reglas de negocio y el SQL.
+
+Los controladores suelen incluir try/catch. En el catch llaman next(error)
+para que app.js produzca una respuesta uniforme.
+
+8.1 Autenticación: /api/auth
+
+auth.routes.js define:
+
+  POST /login
+  POST /recuperar-password
+  GET  /me
+  POST /cambiar-password
+
+Usa rate limits independientes para login, cambio y recuperación; evita
+cachear respuestas sensibles con Cache-Control: no-store; valida entrada.
+
+auth.controller.js:
+
+  login(email, password)
+    Pide a Supabase signInWithPassword. Consulta el perfil en PostgreSQL,
+    confirma que cuenta y rol estén activos y devuelve access_token.
+
+  solicitarRecuperacion(email)
+    Responde con el mismo mensaje exista o no el email, para no revelar
+    qué correos están registrados. Si la cuenta está habilitada, pide a
+    Supabase enviar el proceso de recuperación a FRONTEND_URL.
+
+  perfil(req, res)
+    Devuelve req.usuario, que ya fue construido por autenticar.
+
+  cambiarPassword(...)
+    Comprueba la clave actual volviendo a autenticar; actualiza la nueva
+    clave con supabaseAdmin; desactiva debe_cambiar_password en PostgreSQL.
+
+8.2 Usuarios: /api/usuarios
+
+usuarios.routes.js aplica a todo el router:
+
+  autenticar -> exigirPasswordActualizado -> autorizar admin/superadmin
+
+Endpoints:
+
+  GET    /                  lista usuarios.
+  POST   /                  crea perfil y cuenta Auth.
+  GET    /:id               obtiene uno.
+  PUT    /:id               modifica datos personales.
+  PATCH  /:id/estado        activa/desactiva.
+  PATCH  /:id/restablecer-password
+
+usuarios.controller.js realiza controles adicionales:
+
+  - Un admin no gestiona perfiles admin/superadmin.
+  - Nadie puede desactivarse a sí mismo.
+  - El endpoint administrativo no restablece su propia clave ni la de
+    superadmin.
+  - No se devuelven credenciales normales en respuestas.
+  - La clave temporal se devuelve una vez y la respuesta no se cachea.
+
+usuarios.service.js:
+
+  generarPasswordTemporal()
+    Crea bytes aleatorios criptográficos y los representa como base64url.
+
+  listarUsuarios()
+    Consulta usuarios y nombre de rol.
+
+  crearUsuario(datos)
+    Normaliza email/documento, valida rol, comprueba duplicados, crea
+    primero identidad en Supabase Auth y después perfil PostgreSQL.
+    Si la inserción SQL falla, intenta borrar la identidad Auth creada.
+    Esto es una compensación porque Auth y PostgreSQL son dos servicios
+    distintos y no comparten una transacción SQL.
+
+  actualizarUsuario(id, datos)
+    Solo cambia tipo/número de documento, nombre y apellido; no cambia
+    email, rol, contraseña ni estado.
+
+  cambiarEstadoUsuario(id, activo)
+    Actualiza el booleano activo.
+
+  restablecerPasswordUsuario(id)
+    Verifica perfil activo y vínculo Auth, genera clave temporal, marca
+    cambio obligatorio, cambia la clave Auth y devuelve la credencial
+    temporal. Si falla el cambio Auth, informa que requiere reintento.
+
+8.3 Técnicos: /api/tecnicos
+
+Requiere autenticación y contraseña definitiva. La consulta puede estar
+permitida a técnicos y administración; crear/editar/disponibilidad es
+administrativo.
+
+tecnicos.controller.js transforma solicitudes en llamadas:
+
+  listar, obtener, crear, actualizar, cambiarDisponibilidad.
+
+tecnicos.service.js combina tecnicos con usuarios. Al crear, solo inserta
+perfil si usuario existe, está activo, y su rol también activo y
+tecnico. En la base, un trigger vuelve a exigir que el perfil se asocie
+a rol tecnico.
+
+8.4 Categorías: /api/categorias
+
+La lectura está permitida a los roles del sistema. Crear, editar y
+activar/desactivar exige admin o superadmin.
+
+categorias.controller.js verifica existencia cuando corresponde.
+categorias.service.js hace SELECT, INSERT o UPDATE parametrizados.
+La respuesta típica incluye id, nombre, descripcion y activa.
+
+8.5 Tickets: /api/tickets
+
+Endpoints:
+
+  GET   /                  listado y filtro estado.
+  GET   /:id               consulta uno.
+  POST  /                  crea ticket.
+  PATCH /:id/asignar       asigna técnico.
+  PATCH /:id/estado        transición de estado.
+
+tickets.controller.js nunca toma usuario_id de confianza desde el body
+para crear ticket: lo obtiene de req.usuario.id. Pasa el rol/usuario al
+servicio para comprobaciones.
+
+tickets.service.js:
+
+  CAMPOS
+    Lista fija de columnas SQL que se devolverán.
+
+  TRANSICIONES
+    Objeto cuyas claves son estados actuales y valores son arreglos de
+    estados a los que se puede pasar.
+
+  listarTickets(estado, usuario)
+    Admin ve todos; usuario ve los propios; técnico ve los asignados.
+
+  crearTicket(datos)
+    Inserta ticket abierto solo si la categoría existe y está activa.
+
+  asignarTecnico(ticketId, tecnicoId)
+    Solo permite estados asignables; exige técnico disponible, usuario
+    activo y rol tecnico activo.
+
+  cambiarEstado(...)
+    Abre transacción, bloquea fila con FOR UPDATE, comprueba transición,
+    comprueba asignación y rol, exige solución para resolver/cerrar,
+    actualiza fechas, confirma con COMMIT; si algo falla usa ROLLBACK.
+
+Estados:
+
+  abierto -> asignado
+  asignado -> en_proceso
+  en_proceso -> resuelto
+  resuelto -> cerrado o reabierto
+  cerrado -> reabierto
+  reabierto -> asignado o en_proceso
+
+Un estado no incluido en la transición es rechazado con conflicto 409.
+
+8.6 Seguimientos: /api/tickets/:id/seguimientos
+
+GET consulta el historial; POST agrega observación. El controlador toma
+el autor de req.usuario.id, no de un autor indicado libremente por el
+navegador.
+
+seguimientos.service.js:
+
+  listarSeguimientos(ticketId)
+    Devuelve seguimiento, fecha, autor y rol, ordenados cronológicamente.
+
+  crearSeguimiento(datos)
+    Abre transacción, bloquea ticket, comprueba existencia y que no esté
+    cerrado, inserta observación con el autor autenticado, consulta los
+    datos asociados y confirma la transacción.
+
+8.7 Notificaciones: /api/notificaciones
+
+GET /                  últimas 40 notificaciones propias.
+GET /pendientes        cantidad de no leídas.
+PATCH /:id/leida       marca una propia como leída.
+
+El controlador siempre entrega req.usuario.id al servicio. El servicio
+usa WHERE usuario_id = $1 para impedir leer o actualizar notificaciones
+de otra persona.
+
+8.8 Diagnóstico: /api/laboratorio
+
+Solo se monta si LAB_DIAGNOSTICS_ENABLED está activo y además exige el
+token X-Lab-Token.
+
+  GET /conexion
+  GET /resumen
+  GET /roles
+  GET /tickets/estado/:estado
+
+Devuelve conectividad, totales agregados, roles o conteos. No debe
+activarse en producción; el resumen procura no exponer datos personales.
+
+======================================================================
+9. BASE DE DATOS POSTGRESQL
+======================================================================
+
+database/01_schema.sql es el esquema integral para una base nueva. Abre
+una transacción BEGIN y termina COMMIT. Si se ejecuta correctamente, los
+cambios se confirman juntos.
+
+Tablas y relaciones:
+
+  roles
+    id: clave primaria autogenerada.
+    nombre: superadmin, admin, tecnico o usuario; único.
+    descripcion: descripción legible.
+    activo: permite inhabilitar un rol.
+
+  usuarios
+    id: identificador interno de NEXDESK.
+    auth_user_id: UUID que enlaza con auth.users de Supabase.
+    rol_id: relación con roles.
+    tipo_documento, numero_documento, nombre, apellido, email.
+    activo: cuenta habilitada o no.
+    fecha_registro: fecha por defecto NOW().
+    debe_cambiar_password: exige cambio en primer acceso/restablecimiento.
+
+  tecnicos
+    id: identificador del perfil técnico.
+    usuario_id: usuario dueño del perfil, único.
+    especialidad: área técnica.
+    disponible: si puede recibir asignaciones.
+
+  categorias
+    id, nombre, descripcion, activa.
+    nombre es único; categorías inactivas no admiten tickets nuevos.
+
+  tickets
+    id, titulo, descripcion, prioridad, estado.
+    usuario_id: solicitante.
+    tecnico_id: técnico asignado; puede ser nulo.
+    categoria_id: categoría.
+    solucion y fechas de creación, actualización y cierre.
+
+  seguimientos
+    id, ticket_id, autor_usuario_id, observacion, fecha_registro.
+
+  notificaciones
+    id, usuario_id destinatario, ticket_id opcional, tipo, titulo,
+    mensaje, leida, fecha_creacion, fecha_lectura.
+
+Relaciones:
+
+  usuarios.rol_id -> roles.id
+  tecnicos.usuario_id -> usuarios.id
+  tickets.usuario_id -> usuarios.id
+  tickets.tecnico_id -> tecnicos.id
+  tickets.categoria_id -> categorias.id
+  seguimientos.ticket_id -> tickets.id
+  seguimientos.autor_usuario_id -> usuarios.id
+  notificaciones.usuario_id -> usuarios.id
+  notificaciones.ticket_id -> tickets.id
+  usuarios.auth_user_id -> auth.users.id
+
+PRIMARY KEY identifica cada fila. FOREIGN KEY asegura que la relación
+apunte a una fila existente. UNIQUE impide duplicados. NOT NULL exige
+valor. DEFAULT asigna valor automáticamente. CHECK limita valores.
+
+Ejemplos:
+
+  prioridad solo puede ser baja, media o alta.
+  estado solo puede ser uno de seis estados permitidos.
+  documento se normaliza a mayúscula y sigue formato permitido.
+  email se guarda en minúsculas y debe parecer dirección válida.
+  ticket resuelto/cerrado requiere solución.
+  observación y títulos no pueden quedar vacíos.
+
+Índices:
+
+  idx_usuarios_rol
+  idx_tickets_usuario
+  idx_tickets_tecnico
+  idx_tickets_categoria
+  idx_tickets_estado
+  idx_seguimientos_ticket
+  idx_notificaciones_usuario_pendientes
+  idx_notificaciones_ticket
+
+Un índice es una estructura para encontrar filas más rápido; ocupa
+espacio y hace que algunas escrituras requieran trabajo adicional.
+
+Funciones y triggers:
+
+  validar_perfil_tecnico()
+    Antes de insertar/cambiar técnico, verifica que el usuario tenga rol
+    tecnico. NEW representa la fila nueva que se insertará/actualizará.
+
+  proteger_rol_tecnico()
+    Evita cambiar a otro rol a un usuario que todavía tiene perfil de
+    técnico.
+
+  proteger_nombre_rol()
+    Impide renombrar roles base del sistema.
+
+  actualizar_fecha_ticket()
+    Antes de actualizar ticket, asigna NOW() a fecha_actualizacion.
+
+  nexdesk_notificar_ticket()
+    Después de crear/asignar/cambiar estado crea notificaciones.
+
+  nexdesk_notificar_seguimiento()
+    Después de insertar seguimiento avisa a solicitante y técnico,
+    excepto al propio autor.
+
+En una función PL/pgSQL, TG_OP indica operación (INSERT/UPDATE),
+NEW es la nueva fila y OLD la anterior. SECURITY INVOKER significa que la
+función ejecuta con permisos efectivos del usuario que la invocó.
+
+RLS (Row Level Security) queda habilitada en las tablas. El esquema
+revoca acceso directo de roles anon/authenticated a tablas y secuencias.
+La API del proyecto accede por conexión de PostgreSQL configurada en el
+backend. RLS no sustituye la autorización de las rutas Express.
+
+======================================================================
+10. OTROS ARCHIVOS SQL Y SU PROPÓSITO
+======================================================================
+
+  00_ADVERTENCIA_limpiar_esquema.sql
+    Destructivo: elimina y recrea public. Solo laboratorio descartable
+    y con autorización/backup. No ejecutarlo en base con datos a guardar.
+
+  00_VERIFICAR_limpieza_esquema.sql
+    Comprueba que objetos del esquema se eliminaron.
+
+  01_schema.sql
+    Instalación integral para base nueva. No correr sobre base existente.
+
+  02_seed.sql
+    Inserta roles, usuarios de demostración, perfiles técnicos,
+    categorías, tickets y seguimiento. Son perfiles de PostgreSQL, no
+    credenciales de Supabase Auth ni contraseñas.
+
+  03_queries.sql
+    Consultas de aprendizaje/consulta.
+
+  04_tests.sql
+    Pruebas SQL originales; inspeccionar efectos antes de ejecutarlas.
+
+  05_verificacion_lab24.sql
+    Verificaciones de laboratorio anterior.
+
+  06_lab25_seguridad.sql y 06_lab26_seguridad.sql
+    Cambios históricos de seguridad/versiones de laboratorio.
+
+  07_notificaciones.sql
+    Migración histórica para la tabla de notificaciones, índices y RLS.
+
+  08_funcion_avisos.sql
+    Función y trigger de notificaciones de tickets.
+
+  09_avisos_seguimientos.sql
+    Función y trigger de avisos de seguimientos.
+
+  10_verificacion_integral.sql
+    Lee metadatos de PostgreSQL para comprobar tablas, columnas,
+    triggers, RLS, índices y cantidad de notificaciones.
+
+database/README_ORDEN_SQL.md distingue escenarios:
+
+  Base nueva: 01 -> 02 -> 10 -> enlazar cuentas Auth.
+  Base existente a conservar: ejecutar solo migraciones pendientes en
+  orden 06 -> 07 -> 08 -> 09 y verificar.
+  Reconstrucción: requiere respaldo; limpieza opcional y destructiva.
+
+Los cambios incluidos en 01_schema.sql ya incorporan migraciones
+históricas 06-09. No volver a ejecutar esas migraciones sobre una base
+nueva que ya recibió el esquema integral.
+
+======================================================================
+11. FRONTEND: ARRANQUE, SESIÓN Y NAVEGACIÓN
+======================================================================
+
+src/main.jsx
+
+Busca el elemento HTML con id "root" y monta React allí. Importa
+Bootstrap CSS/JavaScript y los estilos globales. React.StrictMode ayuda a
+detectar ciertos problemas durante desarrollo.
+
+src/App.jsx
+
+Envuelve AppRouter en AuthProvider. Así el estado de autenticación se
+comparte con las páginas y componentes.
+
+context/AuthContext.js
+
+Crea el objeto de contexto AuthContext. El contexto permite compartir
+datos sin pasar props manualmente por cada nivel de componentes.
+
+context/AuthContext.jsx
+
+AuthProvider mantiene tres estados React:
+
+  token          token Bearer actual.
+  usuario        perfil de la sesión.
+  cargandoSesion indica que aún se valida sesión guardada.
+
+Al cargar la página lee nexdesk_access_token de sessionStorage y llama
+GET /api/auth/me. Si sirve, restaura usuario/token; si falla, borra la
+sesión.
+
+login(email,password) pide el token al backend, pide el perfil y guarda
+el token en sessionStorage.
+
+logout() elimina token y perfil.
+
+cambiarPassword() llama al endpoint con token y, al finalizar, cierra
+sesión. El usuario debe volver a entrar con la nueva contraseña.
+
+sessionStorage mantiene el token en la pestaña actual mientras siga
+abierta. No se debe compartir ni guardar en capturas.
+
+hooks/useAuth.js
+
+Es un hook pequeño para leer el AuthContext. Los componentes llaman
+useAuth() para obtener usuario, token, login, logout u otras funciones.
+
+routes/AppRouter.jsx
+
+BrowserRouter administra la URL del navegador sin recargar toda la
+página. Routes y Route conectan cada URL con su componente.
+
+RutaLogin evita volver al login si ya hay sesión; manda al cambio de
+clave o al dashboard.
+
+RutaPorRol oculta módulos no correspondientes al rol. Es comodidad de
+interfaz; el backend sigue siendo quien aplica la autorización real.
+
+routes/RutaProtegida.jsx
+
+Mientras valida muestra "Verificando sesión". Sin usuario redirige a
+/login. Con cambio obligatorio redirige a /cambiar-password. Si permite
+acceso, muestra <Outlet />, que es el lugar donde React Router dibuja la
+ruta hija.
+
+layouts/MainLayout.jsx
+
+Agrupa Sidebar, NavbarPrincipal y <Outlet />. Guarda el estado abierto o
+cerrado del menú.
+
+config/api.js
+
+Lee import.meta.env.VITE_API_URL. Si falta, usa
+http://localhost:3000. Quita una barra final para formar URLs uniformes.
+
+config/menu.js
+
+MENU es un arreglo de objetos. Cada objeto contiene titulo, ruta, icono
+y roles permitidos. menuPorRol(rol) devuelve solo opciones cuyo arreglo
+roles incluye ese rol.
+
+======================================================================
+12. FRONTEND: SERVICIOS HTTP
+======================================================================
+
+Los archivos src/services/* no son los servicios de negocio del backend.
+En React son funciones que llaman por fetch a la API.
+
+Patrón habitual:
+
+  1. Formar URL desde API_URL.
+  2. Agregar Authorization: Bearer <token>.
+  3. Agregar Content-Type cuando se envía JSON.
+  4. Ejecutar fetch.
+  5. Leer respuesta JSON.
+  6. Si !respuesta.ok, convertirla en Error de JavaScript.
+  7. Devolver los datos al componente.
+
+auth.service.js
+
+iniciarSesion, obtenerPerfil y cambiarPassword llaman a las rutas de
+autenticación. procesarRespuesta verifica el content-type y el estado;
+si hay error crea Error con status y codigo.
+
+tickets.service.js
+
+solicitar es función auxiliar para /api/tickets. Las funciones públicas
+listarTickets, obtenerTicket, crearTicket, asignarTecnicoTicket y
+cambiarEstadoTicket componen la ruta, método y body.
+
+usuarios.service.js
+
+Funciones para listar, crear, actualizar, cambiar estado y restablecer
+clave. En operaciones con body transforma el objeto a texto JSON.
+
+tecnicos.service.js
+
+Tiene procesarRespuesta y solicitar compartidas para listar, consultar,
+crear, editar y cambiar disponibilidad.
+
+categorias.service.js
+
+Funciones de operaciones CRUD y estado activo/inactivo. El cambio usa
+rutas /activar o /desactivar.
+
+seguimientos.service.js
+
+Comprueba que ticketId sea entero positivo seguro. Antes de registrar,
+limpia espacios exteriores y exige observación de 1 a 2000 caracteres.
+
+notificaciones.service.js
+
+Lista, cuenta pendientes y marca leída. Todas las rutas incluyen token.
+
+estado.service.js
+
+Consulta GET /api/estado para mostrar si backend está operativo.
+
+AbortController/signal permite cancelar una solicitud si el componente
+se desmonta o deja de necesitarla; previene actualizaciones sobre una
+pantalla que ya no existe.
+
+======================================================================
+13. FRONTEND: PÁGINAS Y COMPONENTES
+======================================================================
+
+pages/Login.jsx
+
+Formulario con email/contraseña. useState conserva los valores y errores.
+Al enviar llama login del contexto; redirige a cambio obligatorio o
+dashboard. Estado cargando deshabilita botón durante la petición.
+Incluye EstadoBackend.
+
+pages/CambiarPassword.jsx
+
+Lee contraseña actual, nueva y confirmación. Comprueba longitud y que
+coincidan antes de llamar al backend. Después cierra sesión y redirige
+al login.
+
+pages/Dashboard.jsx
+
+Consulta tickets para construir analítica. Muestra saludo, cuenta
+autenticada, rol, enlaces de módulos permitidos, FlujoTickets y
+AnaliticaTickets. Usa AbortController y un contador para volver a
+cargar datos.
+
+pages/Usuarios.jsx
+
+Administra listado, búsqueda, filtro, recarga, creación, edición,
+activación/desactivación y restablecimiento. Las funciones auxiliares
+normalizan varios formatos posibles de respuesta y nombre/rol/estado.
+Los modales realizan captura y confirmación de datos.
+
+pages/Tecnicos.jsx
+
+Consulta técnicos y usuarios. Filtra los técnicos, calcula usuarios que
+tienen rol tecnico y aún no están vinculados a un perfil. Permite crear,
+editar y alternar disponibilidad.
+
+pages/Categorias.jsx
+
+Consulta y filtra categorías por nombre/descripción y estado. Modal para
+crear/editar. Confirmación antes de activar/desactivar. Los mensajes de
+éxito se ocultan tras unos segundos.
+
+pages/Tickets.jsx
+
+Mantiene listado, categorías, técnicos, filtros, búsqueda y estado de
+varios modales. Consulta API según rol y ofrece crear ticket, asignar
+técnico y cambiar estado. El backend vuelve a verificar permisos y
+transiciones.
+
+pages/Seguimientos.jsx
+
+Pantalla de historial y registro de seguimientos; usa el servicio de
+seguimientos y los datos de autenticación.
+
+pages/ModuloPendiente.jsx
+
+Componente genérico para mostrar que un módulo aún no está implementado.
+
+components/AnaliticaTickets.jsx
+
+Recibe props tickets, cargando, error y onActualizar. useMemo calcula
+totales por estado y prioridad. Crea gráficos de barras con elementos
+HTML/CSS y exporta CSV/PDF.
+
+CSV:
+  escaparCSV pone comillas, duplica comillas internas y antepone
+  apóstrofo a valores que Excel podría interpretar como fórmula.
+  descargarCSV crea Blob, URL temporal y enlace de descarga.
+  BOM ayuda a Excel a mostrar tildes/ñ en UTF-8.
+
+PDF:
+  jsPDF crea hoja apaisada; autoTable imprime tabla y repite páginas.
+  El reporte usa los tickets visibles para la identidad autenticada.
+
+components/CampanaNotificaciones.jsx
+
+Consulta lista y total no leído al inicio y cada 30 segundos. Guarda
+avisos, contador, error y estado cargando. Al abrir puede refrescar; al
+seleccionar marca como leída y navega a /tickets si tiene ticket.
+AbortController cancela la tarea al desmontar.
+
+components/Sidebar.jsx
+
+Muestra enlaces filtrados por rol y puede cerrarse en pantalla móvil.
+
+components/NavbarPrincipal.jsx
+
+Muestra nombre, inicial, rol, email, campana y menú de cuenta; logout
+borra la sesión y navega a /login.
+
+components/EstadoBackend.jsx
+
+Presenta el estado de conexión con endpoint público de backend.
+
+components/FlujoTickets.jsx
+
+Representa visualmente las etapas o flujo de vida de un ticket.
+
+components/HistorialSeguimientos.jsx
+
+Presenta observaciones y datos del autor/fecha dentro de un ticket.
+
+Modales de componentes:
+
+  ModalNuevoTicket            captura datos de ticket nuevo.
+  ModalAsignarTecnico         elige técnico para un ticket.
+  ModalEstadoTicket           muestra estados permitidos y solución.
+  ModalCategoria              crea/edita nombre y descripción.
+  ModalTecnico                captura usuario, especialidad y disponibilidad.
+  ModalNuevoUsuario           captura datos de alta.
+  ModalEditarUsuario          edita datos personales.
+  ModalEstadoUsuario          confirma activar/desactivar.
+  ModalRestablecerPassword    confirma restablecimiento.
+  CredencialTemporal          muestra credencial temporal recibida.
+  FormularioUsuario           campos comunes reutilizables.
+  ToastBienvenida             notificación temporal de bienvenida.
+
+Los componentes reciben datos por propiedades (props) y comunican cambios
+al padre llamando callbacks como onGuardar, onCerrar u onConfirmar.
+
+CSS:
+
+  index.css contiene reglas globales.
+  App.css contiene estilos visuales de la aplicación.
+  Bootstrap aporta clases como container, row, btn y modal.
+
+======================================================================
+14. NOTIFICACIONES AUTOMÁTICAS EN LA BASE DE DATOS
+======================================================================
+
+Crear ticket -> trigger de tickets crea aviso para administradores.
+Asignar técnico -> trigger busca el usuario asociado al técnico y avisa.
+Cambiar estado -> trigger notifica al solicitante.
+Crear seguimiento -> trigger avisa solicitante y técnico, omitiendo autor.
+
+React consulta cada 30 segundos. No hay WebSockets ni Supabase Realtime.
+Por eso el cambio no necesariamente aparece instantáneamente.
+
+Limitación documentada: el trigger de cambio de estado no recibe
+identidad del actor; puede notificar al mismo solicitante que ejecutó
+esa transición.
+
+======================================================================
+15. POSTMAN: COLECCIÓN Y AMBIENTE
+======================================================================
+
+postman/NEXDESK_LAB25_40_PRUEBAS.postman_collection.json es una colección
+Postman v2.1. Contiene solicitudes organizadas en carpetas, requests,
+autenticación, body y scripts de test.
+
+Estructura JSON importante:
+
+  info       nombre, descripción, ID y versión del esquema.
+  item       lista de carpetas/solicitudes.
+  request    método, URL, headers, auth y body.
+  event      scripts que corren durante la prueba.
+  script.exec instrucciones JavaScript de Postman.
+  auth       noauth o Bearer token.
+
+Las pruebas tienen carpetas por tema:
+
+  01 Acceso y JWT
+    servidor activo, login de perfiles, consulta de perfil y rechazo
+    cuando no se envía token.
+
+  02 Usuarios y RBAC
+    listado, alta, consulta, actualización, activación, alta de técnico
+    como usuario y casos donde roles no autorizados deben recibir 403.
+
+  03 Técnicos
+    crear perfil, listar, editar y cambiar disponibilidad.
+
+  04 Categorías
+    alta, consulta, edición, activación/desactivación y rechazo a rol
+    usuario sin permiso.
+
+  05 Tickets y estados
+    creación, lectura propia, prohibición de asignar sin permiso,
+    asignación, transición a en_proceso, seguimiento, resolución y cierre.
+
+  06 Seguimientos y BOLA
+    prueba de acceso a recursos propios/ajenos y respuestas 404 para
+    quien no debe conocer el ticket.
+
+En test scripts, pm.test verifica que el status HTTP sea el esperado.
+pm.response.json() interpreta respuesta; pm.collectionVariables.set(...)
+guarda token o ID generado para requests posteriores.
+
+postman/NEXDESK_LAB25_40_PRUEBAS.postman_environment.json define variables
+de ambiente, por ejemplo baseUrl, emails, contraseñas y runId. El
+ambiente entregado deja datos de cuenta vacíos para que se completen en
+Postman con credenciales válidas del laboratorio. No se debe exportar o
+compartir un ambiente con contraseñas/tokens reales.
+
+Una variable Postman escrita {{baseUrl}} se reemplaza por el valor
+definido en el ambiente seleccionado. Es independiente de una variable
+JavaScript aunque tenga nombre parecido.
+
+La colección depende de orden y datos existentes. Se debe usar en
+laboratorio, nunca en producción.
+
+======================================================================
+16. FLUJO COMPLETO DE EJEMPLO: LOGIN
+======================================================================
+
+1. La persona escribe email y contraseña en Login.jsx.
+2. React llama login del AuthContext.
+3. auth.service.js envía POST /api/auth/login.
+4. Express encuentra auth.routes.js.
+5. Se limita la frecuencia, se validan datos y se invoca controller.login.
+6. Supabase Auth valida correo y contraseña.
+7. PostgreSQL busca perfil y rol vinculados al UUID.
+8. El backend rechaza cuenta inactiva o perfil no vinculado.
+9. Devuelve access_token al frontend.
+10. React guarda token en sessionStorage.
+11. React llama GET /api/auth/me con Authorization: Bearer token.
+12. Backend vuelve a verificar JWT y perfil.
+13. React guarda usuario en contexto y decide ruta por cambio obligatorio.
+
+======================================================================
+17. FLUJO COMPLETO DE EJEMPLO: CREAR Y ATENDER TICKET
+======================================================================
+
+1. El usuario introduce título, descripción, prioridad y categoría.
+2. React valida presentación y llama crearTicket.
+3. fetch envía POST /api/tickets, JSON y Bearer token.
+4. autenticar valida token y crea req.usuario.
+5. exigirPasswordActualizado comprueba que la clave ya sea definitiva.
+6. autorizar comprueba rol permitido para crear.
+7. express-validator valida cuerpo.
+8. El controlador asigna usuario_id desde req.usuario.id.
+9. El servicio inserta con estado abierto y categoría activa.
+10. PostgreSQL comprueba FK y CHECK.
+11. Trigger genera notificaciones de creación.
+12. API devuelve 201 y fila creada.
+13. React recarga listado.
+14. Administrador asigna técnico; el servicio exige técnico disponible.
+15. Trigger crea aviso de asignación.
+16. Técnico cambia estado conforme a transiciones válidas.
+17. Se agregan seguimientos; trigger crea avisos.
+18. Para resolver/cerrar se exige solución.
+
+======================================================================
+18. SEGURIDAD: POR QUÉ SE COMPRUEBA EN VARIAS PARTES
+======================================================================
+
+La interfaz puede ocultar un botón, pero cualquier persona puede intentar
+llamar directamente a la API. Por eso:
+
+  - React mejora la experiencia y muestra opciones pertinentes.
+  - Express autentica, valida roles y propiedad de recursos.
+  - PostgreSQL impone claves foráneas, restricciones e índices.
+  - RLS regula acceso a tablas según rol de base de datos/políticas.
+  - Supabase Auth verifica identidad y credenciales.
+
+Bearer token demuestra sesión. RBAC comprueba el rol. BOLA comprueba
+acceso al objeto concreto. Son comprobaciones diferentes.
+
+Las consultas usan parámetros $1, $2, etc.; no concatenan datos
+proporcionados por usuario dentro del SQL. Así se reduce el riesgo de
+inyección SQL.
+
+Errores 401 y 403:
+
+  401: el servidor no pudo establecer identidad válida.
+  403: identidad válida pero la operación no está permitida.
+
+======================================================================
+19. CÓMO EXPLICARLO ORALMENTE AL PROFESOR
+======================================================================
+
+"NEXDESK es un sistema de soporte con frontend React, API Express y
+PostgreSQL en Supabase. Supabase Auth verifica la identidad. El backend
+vincula el UUID de Auth con public.usuarios y obtiene el rol. Las rutas
+ejecutan autenticación, validación y autorización antes de llamar al
+controlador y al servicio. El servicio aplica reglas y SQL parametrizado.
+La base impone relaciones y restricciones. React consume la API con un
+Bearer token y presenta módulos según el rol. Los tickets tienen estados
+y transiciones limitadas, seguimientos y notificaciones automáticas."
+
+Preguntas cortas:
+
+  ¿Qué es una dependencia?
+    Código de un paquete que el proyecto reutiliza, como Express.
+
+  ¿Para qué package.json?
+    Declara el proyecto, comandos y dependencias requeridas.
+
+  ¿Para qué package-lock.json?
+    Registra versiones resueltas exactas para instalaciones reproducibles.
+
+  ¿Qué es una API REST?
+    Interfaz HTTP con rutas y métodos para que frontend y backend
+    intercambien datos.
+
+  ¿Qué hace un middleware?
+    Revisa o modifica solicitud antes del controlador y puede detenerla.
+
+  ¿Qué es un token Bearer?
+    Credencial temporal enviada en Authorization para probar sesión.
+
+  ¿Qué es una clave foránea?
+    Regla que hace que una referencia apunte a un registro existente.
+
+  ¿Qué es un trigger?
+    Código de PostgreSQL ejecutado automáticamente por un evento de tabla.
+
+  ¿Qué es una transacción?
+    Grupo de operaciones que se confirma todo junto o se revierte.
+
+  ¿Qué significa RLS?
+    Seguridad a nivel de fila de PostgreSQL.
+
+  ¿Qué es un objeto JavaScript?
+    Conjunto de propiedades nombre: valor agrupadas entre llaves.
+
+======================================================================
+20. PRECAUCIONES AL TRABAJAR
+======================================================================
+
+  - No publicar .env, tokens, contraseñas ni SERVICE_ROLE_KEY.
+  - No ejecutar el SQL de limpieza en una base con datos que se desean
+    conservar.
+  - No ejecutar seed dos veces si contiene datos que chocan con UNIQUE.
+  - No confundir usuarios seed de PostgreSQL con cuentas Auth.
+  - No asumir que ocultar una ruta en React la hace segura: API valida.
+  - Ejecutar Postman en ambiente de prueba, no producción.
+  - Revisar que origen CORS y VITE_API_URL coincidan con los puertos.
+  - La clave temporal aparece una sola vez: debe entregarse con cuidado.
+  - Los archivos de claves/certificados no sustituyen la contraseña DB.
+
+FIN DE LA GUIA
